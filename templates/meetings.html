@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Meetings - Digipodium{% endblock %}
+{% block content %}
+<div class="content-wrapper">
+  <div class="content">
+    <h2>Meetings</h2>
+    <div class="row">
+      {% for meeting in meetings %}
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">{{ meeting.title }}</div>
+          <div class="card-body">
+            <p>Date: {{ meeting.date }}</p>
+            <p>Location: {{ meeting.location }}</p>
+            <p>{{ meeting.description }}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
