@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Chat - Employee Track{% endblock %}
+
+{% block csslinks %}
+<link href="https://fonts.googleapis.com/css?family=Montserrat:400,500|Poppins:400,500,600,700|Roboto:400,500" rel="stylesheet" />
+<link href="https://cdn.materialdesignicons.com/4.4.95/css/materialdesignicons.min.css" rel="stylesheet" />
+<link href="/static/plugins/simplebar/simplebar.css" rel="stylesheet" />
+<link href="/static/plugins/nprogress/nprogress.css" rel="stylesheet" />
+<link id="sleek-css" rel="stylesheet" href="/static/css/sleek.css" />
+<link href="/static/img/favicon.png" rel="shortcut icon" />
+<script src="/static/plugins/nprogress/nprogress.js"></script>
+<style>
+.chat-container {
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+}
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+}
+.message-received {
+    background-color: #f8f9fa;
+    margin-right: 20%;
+}
+.message-sent {
+    background-color: #007bff;
+    color: white;
+    margin-left: 20%;
+}
+.message-time {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+.message-sent .message-time {
+    color: #e9ecef;
+}
+.chat-input {
+    padding: 15px;
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+  <div class="content">
+    <div class="row">
+      <div class="col-12">
+        <div class="card card-default">
+          <div class="card-header card-header-border-bottom d-flex justify-content-between align-items-center">
+            <h2>Group Chat</h2>
+            <div class="btn-group">
+              <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                Send To: <span id="currentRecipient">Everyone</span>
+              </button>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="#" data-recipient-id="0">Everyone</a>
+                {% for user in form.recipient_id.choices if user[0] != 0 %}
+                <a class="dropdown-item" href="#" data-recipient-id="{{ user[0] }}">{{ user[1] }}</a>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="chat-container">
+              <div class="chat-messages" id="chatMessages">
+                {% for message in messages %}
+                <div class="message {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
+                  <div class="message-header">
+                    <strong>{{ message.sender.name }}</strong>
+                    {% if message.recipient %}
+                    <span class="badge badge-info">to {{ message.recipient.name }}</span>
+                    {% else %}
+                    <span class="badge badge-secondary">to Everyone</span>
+                    {% endif %}
+                    <span class="message-time">{{ message.timestamp.strftime('%H:%M') }}</span>
+                  </div>
+                  <div class="message-content">
+                    {{ message.content }}
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="chat-input">
+                <form id="chatForm" method="POST">
+                  {{ form.hidden_tag() }}
+                  {{ form.recipient_id(style="display: none;") }}
+                  <div class="input-group">
+                    {{ form.content(class="form-control", placeholder="Type your message...") }}
+                    <div class="input-group-append">
+                      {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block jslinks %}
+<script src="/static/plugins/jquery/jquery.min.js"></script>
+<script src="/static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/static/plugins/simplebar/simplebar.min.js"></script>
+<script src="/static/js/sleek.js"></script>
+<script>
+$(document).ready(function() {
+    function scrollToBottom() {
+        var chatMessages = document.getElementById('chatMessages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    scrollToBottom();
+
+    // Handle recipient selection
+    $('.dropdown-item').click(function(e) {
+        e.preventDefault();
+        var recipientId = $(this).data('recipient-id');
+        var recipientName = $(this).text();
+        $('#currentRecipient').text(recipientName);
+        $('#recipient_id').val(recipientId);
+    });
+
+    // Handle form submission
+    $('#chatForm').on('submit', function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: '/chat',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                $('#content').val('');
+                loadMessages();
+            },
+            error: function() {
+                alert('Error sending message');
+            }
+        });
+    });
+
+    // Auto refresh messages
+    function loadMessages() {
+        $.ajax({
+            url: '/get_messages',
+            success: function(messages) {
+                var chatHtml = '';
+                messages.forEach(function(msg) {
+                    chatHtml += `
+                        <div class="message ${msg.sender === '{{ current_user.name }}' ? 'message-sent' : 'message-received'}">
+                            <div class="message-header">
+                                <strong>${msg.sender}</strong>
+                                <span class="message-time">${msg.timestamp}</span>
+                            </div>
+                            <div class="message-content">
+                                ${msg.content}
+                            </div>
+                        </div>
+                    `;
+                });
+                $('#chatMessages').html(chatHtml);
+                scrollToBottom();
+            }
+        });
+    }
+    
+    setInterval(loadMessages, 5000);
+});
+</script>
+{% endblock %}

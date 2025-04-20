@@ -1,23 +1,97 @@
 {% extends "base.html" %}
-{% block title %}Meetings - Digipodium{% endblock %}
+{% block title %}Meetings - Employee Track{% endblock %}
+
+{% block csslinks %}
+<link href="https://fonts.googleapis.com/css?family=Montserrat:400,500|Poppins:400,500,600,700|Roboto:400,500" rel="stylesheet" />
+<link href="https://cdn.materialdesignicons.com/4.4.95/css/materialdesignicons.min.css" rel="stylesheet" />
+<link href="/static/plugins/simplebar/simplebar.css" rel="stylesheet" />
+<link href="/static/plugins/nprogress/nprogress.css" rel="stylesheet" />
+<link href="/static/plugins/data-tables/dataTables.bootstrap4.min.css" rel="stylesheet" />
+<link id="sleek-css" rel="stylesheet" href="/static/css/sleek.css" />
+<link href="/static/img/favicon.png" rel="shortcut icon" />
+<script src="/static/plugins/nprogress/nprogress.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="content-wrapper">
   <div class="content">
-    <h2>Meetings</h2>
     <div class="row">
-      {% for meeting in meetings %}
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">{{ meeting.title }}</div>
+      <div class="col-12">
+        <div class="card card-default">
+          <div class="card-header card-header-border-bottom d-flex justify-content-between">
+            <h2>My Meetings</h2>
+            <a href="{{ url_for('create_meeting') }}" class="btn btn-primary">Create Meeting</a>
+          </div>
           <div class="card-body">
-            <p>Date: {{ meeting.date }}</p>
-            <p>Location: {{ meeting.location }}</p>
-            <p>{{ meeting.description }}</p>
+            <div class="table-responsive">
+              <table id="meetings-table" class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Date & Time</th>
+                    <th>Location</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for meeting in meetings %}
+                  <tr>
+                    <td>{{ meeting.title }}</td>
+                    <td>{{ meeting.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ meeting.location }}</td>
+                    <td><span class="badge badge-{{ meeting.event_type }}">{{ meeting.event_type|title }}</span></td>
+                    <td>{{ meeting.description|truncate(50) }}</td>
+                    <td>
+                      <form action="{{ url_for('delete_meeting', meeting_id=meeting.id) }}" method="POST" class="d-inline delete-meeting-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
-      {% endfor %}
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block jslinks %}
+<script src="/static/plugins/jquery/jquery.min.js"></script>
+<script src="/static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/static/plugins/simplebar/simplebar.min.js"></script>
+<script src="/static/plugins/data-tables/jquery.datatables.min.js"></script>
+<script src="/static/plugins/data-tables/datatables.bootstrap4.min.js"></script>
+<script src="/static/js/sleek.js"></script>
+<script>
+$(document).ready(function() {
+    $('#meetings-table').DataTable({
+        "order": [[ 1, "asc" ]],
+        "pageLength": 10
+    });
+
+    $('.delete-meeting-form').on('submit', function(e) {
+        e.preventDefault();
+        if (confirm('Are you sure you want to delete this meeting?')) {
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    location.reload();
+                },
+                error: function() {
+                    alert('An error occurred while deleting the meeting');
+                }
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

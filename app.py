@@ -21,7 +21,8 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 from flask_wtf.file import FileAllowed, FileField
 from PIL import Image
 import secrets
-
+from datetime import datetime, date, time
+from flask_migrate import Migrate
 
 
 app = Flask(__name__)
@@ -34,6 +35,7 @@ csrf = CSRFProtect(app)  # Initialize CSRF protection
 app.config['CSRF_ENABLED'] = True  # Enable CSRF protection
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)  # Initialize Flask-Migrate
 Session(app)  # Initialize Flask-Session
 
 login_manager = LoginManager()
@@ -91,6 +93,7 @@ class Attendance(db.Model):
     def __repr__(self):
         return f"Attendance('{self.date}', '{self.time_in}', '{self.time_out}')"
 
+
 class Meeting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'), nullable=False)
@@ -103,12 +106,30 @@ class Meeting(db.Model):
     def __repr__(self):
         return f"Meeting('{self.title}', '{self.date}')"
 
+
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('employee.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('employee.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     content = db.Column(db.Text, nullable=False)
+
+
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    due_date = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, completed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"Task('{self.title}', '{self.due_date}', '{self.status}')"
+
+
+# Add relationship to Employee model
+Employee.tasks = db.relationship('Task', backref='assigned_to', lazy=True)
 
 # --- Forms ---
 
@@ -241,10 +262,42 @@ def dashboard():
     employee = current_user
     form = AttendanceForm()
     today = date.today()  # Get today's date
-    #check if Attendance is already marked or not
+    
+    # Get the current month's attendance
+    current_month = today.replace(day=1)
+    next_month = (current_month + timedelta(days=32)).replace(day=1)
+    monthly_attendance = Attendance.query.filter_by(employee_id=employee.id)\
+        .filter(Attendance.date >= current_month)\
+        .filter(Attendance.date < next_month).all()
+    
+    # Create attendance dict for calendar
+    attendance_by_day = {}
+    for att in monthly_attendance:
+        day = att.date.day
+        attendance_by_day[day] = att
+
+    # Get tasks 
+    tasks = Task.query.filter_by(employee_id=employee.id).order_by(Task.due_date.asc()).limit(5).all()
+    pending_tasks = Task.query.filter_by(employee_id=employee.id, status='pending').count()
+    completed_tasks = Task.query.filter_by(employee_id=employee.id, status='completed').count()
+    
+    # Check if attendance is marked for today
     attendance_marked = Attendance.query.filter_by(employee_id=employee.id, date=today).first()
 
-    return render_template('dashboard.html',employee = current_user, form=form, attendance_marked = attendance_marked )
+    # Get calendar days
+    cal = Calendar()
+    days = [d for d in cal.itermonthdates(today.year, today.month)]
+
+    return render_template('dashboard.html',
+                         employee=current_user,
+                         form=form,
+                         attendance_marked=attendance_marked,
+                         days=days,
+                         today=today,  # Pass today to template
+                         attendance_by_day=attendance_by_day,
+                         tasks=tasks,
+                         pending_tasks=pending_tasks,
+                         completed_tasks=completed_tasks)
 
 
 @app.route("/profile", methods=['GET', 'POST'])
@@ -566,9 +619,71 @@ def change_password():
             flash('Invalid old password.', 'danger')
     return render_template('change_password.html', form=form)
 
+@app.template_filter('time')
+def time_filter(time_str):
+    return datetime.strptime(time_str, '%H:%M:%S').time()
+
+@app.route("/")
+def index():
+    pass
+
+# Task Management Routes
+@app.route('/task/<int:task_id>/toggle', methods=['POST'])
+@login_required
+def toggle_task_status(task_id):
+    task = Task.query.get_or_404(task_id)
+    if task.employee_id != current_user.id:
+        return jsonify({'message': 'Unauthorized', 'status': 'error'}), 403
+        
+    task.status = 'completed' if task.status == 'pending' else 'pending'
+    db.session.commit()
+    return jsonify({
+        'status': 'success',
+        'new_status': task.status
+    })
+
+@app.route('/task/new', methods=['POST'])
+@csrf.exempt
+@login_required
+def create_task():
+    try:
+        csrf_token = request.headers.get('X-CSRF-Token')
+        if not csrf_token:
+            return jsonify({'message': 'CSRF token missing', 'status': 'error'}), 403
+            
+        data = request.get_json()
+        if not data.get('title'):
+            return jsonify({'message': 'Title is required', 'status': 'error'}), 400
+            
+        # Parse the datetime string properly
+        due_date = datetime.strptime(data['due_date'], '%Y-%m-%dT%H:%M')
+        
+        task = Task(
+            employee_id=current_user.id,
+            title=data['title'],
+            description=data.get('description'),
+            due_date=due_date,
+            status='pending'
+        )
+        db.session.add(task)
+        db.session.commit()
+        return jsonify({
+            'status': 'success',
+            'message': 'Task created successfully'
+        })
+    except ValueError as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid date format. Please use YYYY-MM-DDTHH:MM format.'
+        }), 400
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error creating task: {str(e)}'
+        }), 500
 
 def start_server():
-    app.run(debug=True, host='0.0.0.0', port=5001)  # Be explicit about host and port
+    app.run(debug=True, host='0.0.0.0', port=5000)  # Be explicit about host and port
 
 if __name__ == '__main__':
     # --- Database setup ---

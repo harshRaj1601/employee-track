@@ -1,0 +1,11 @@
+{% for message in messages %}
+<div class="message {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
+  <div class="message-header">
+    <strong>{{ message.sender.name }}</strong>
+    <span class="message-time">{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+  </div>
+  <div class="message-content">
+    {{ message.content }}
+  </div>
+</div>
+{% endfor %}
