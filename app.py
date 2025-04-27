@@ -23,6 +23,7 @@ from PIL import Image
 import secrets
 from datetime import datetime, date, time
 from flask_migrate import Migrate
+from sqlalchemy import or_
 
 
 app = Flask(__name__)
@@ -88,10 +89,9 @@ class Attendance(db.Model):
     employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time_in = db.Column(db.Time)
-    time_out = db.Column(db.Time)
 
     def __repr__(self):
-        return f"Attendance('{self.date}', '{self.time_in}', '{self.time_out}')"
+        return f"Attendance('{self.date}', '{self.time_in}')"
 
 
 class Meeting(db.Model):
@@ -479,30 +479,20 @@ def meetings_calender():
      employee = current_user
      today = date.today()
 
-     # Get the year and month from the request arguments, if provided.
+     # Get the year and month from the request arguments
      year = int(request.args.get('year', today.year))
      month = int(request.args.get('month', today.month))
-
-     # Handle next and previous month navigation
-     if request.form.get('action') == 'prev':
-         month -= 1
-         if month < 1:
-             month = 12
-             year -= 1
-     elif request.form.get('action') == 'next':
-         month += 1
-         if month > 12:
-             month = 1
-             year += 1
 
      # Get the first day of the month and number of days in the month
      first_day = date(year, month, 1)
      num_days = monthrange(year, month)[1]
 
      # Get meetings for the month
-     first = date(year,month,1)
+     first = date(year, month, 1)
      lastDay = date(year, month, num_days)
-     meetings = Meeting.query.filter_by(employee_id=employee.id).filter(Meeting.date >= first).filter(Meeting.date <= lastDay).all()
+     meetings = Meeting.query.filter_by(employee_id=employee.id)\
+               .filter(Meeting.date >= first)\
+               .filter(Meeting.date <= lastDay).all()
 
      # Create a calendar instance
      cal = Calendar()
@@ -519,16 +509,12 @@ def meetings_calender():
      days = [d for d in cal.itermonthdates(year, month)]
 
      return render_template('calendar.html',
-                           year=year,
-                           month=month,
-                           monthrange=monthrange, #Pass also Month Range
-                           first_day=first_day,
-                           days=days,
-                           meetings_by_day=meetings_by_day,
-                           range = range, #For Iterations in loops
-                           num_days = num_days,
-                           employee=employee,
-                           today=today)
+                         year=year,
+                         month=month,
+                         first_day=first_day,
+                         days=days,
+                         meetings_by_day=meetings_by_day,
+                         today=today)
      
 @app.route("/meetings/new", methods=['GET', 'POST'])
 @login_required
@@ -577,33 +563,110 @@ def edit_profile():
 @login_required
 def chat():
     form = ChatForm()
-    # Populate recipient choices (exclude current user)
-    form.recipient_id.choices = [(0, 'Everyone')] + [(e.id, e.name) for e in Employee.query.filter(Employee.id != current_user.id).all()]
-    messages = Chat.query.order_by(Chat.timestamp.desc()).limit(50).all() # change limit and add filter
+    # Populate recipient choices with extra user info including profile pictures
+    users = Employee.query.filter(Employee.id != current_user.id).all()
+    form.recipient_id.choices = [(0, 'Everyone')] + [(u.id, u.name) for u in users]
+    
+    # Get the selected recipient from query params
+    selected_recipient_id = request.args.get('recipient_id', type=int)
+    
+    if selected_recipient_id:
+        # Filter messages for direct chat between current user and selected recipient
+        messages = Chat.query.filter(
+            or_(
+                and_(Chat.sender_id == current_user.id, Chat.recipient_id == selected_recipient_id),
+                and_(Chat.sender_id == selected_recipient_id, Chat.recipient_id == current_user.id),
+                and_(Chat.recipient_id == None, Chat.sender_id.in_([current_user.id, selected_recipient_id]))
+            )
+        ).order_by(Chat.timestamp.asc()).limit(100).all()
+    else:
+        # Get messages that are either:
+        # 1. Sent to everyone (recipient_id is None)
+        # 2. Sent by the current user
+        # 3. Sent to the current user
+        messages = Chat.query.filter(
+            or_(
+                Chat.recipient_id == None,  # Messages sent to everyone
+                Chat.sender_id == current_user.id,  # Messages sent by current user
+                Chat.recipient_id == current_user.id  # Messages sent to current user
+            )
+        ).order_by(Chat.timestamp.asc()).limit(100).all()
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if form.validate_on_submit():
+            recipient_id = form.recipient_id.data if form.recipient_id.data != 0 else None
+            new_message = Chat(
+                sender_id=current_user.id, 
+                recipient_id=recipient_id, 
+                content=form.content.data
+            )
+            db.session.add(new_message)
+            try:
+                db.session.commit()
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Message sent successfully'
+                })
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({
+                    'status': 'error',
+                    'message': str(e)
+                }), 500
+        return jsonify({
+            'status': 'error',
+            'errors': form.errors
+        }), 400
 
     if form.validate_on_submit():
         recipient_id = form.recipient_id.data if form.recipient_id.data != 0 else None
-        new_message = Chat(sender_id=current_user.id, recipient_id=recipient_id, content=form.content.data)
+        new_message = Chat(
+            sender_id=current_user.id,
+            recipient_id=recipient_id,
+            content=form.content.data
+        )
         db.session.add(new_message)
         db.session.commit()
-        return redirect(url_for('chat'))  # Or use AJAX to update the display
+        return redirect(url_for('chat'))
     
     return render_template('chat.html', form=form, messages=messages)
 
 @app.route('/get_messages', methods=['GET'])
 @login_required
 def get_messages():
-    messages = Chat.query.order_by(Chat.timestamp.desc()).limit(50).all() #Add query parameters
+    selected_recipient_id = request.args.get('recipient_id', type=int)
+    
+    if selected_recipient_id == 0:  # Everyone (broadcast messages)
+        messages = Chat.query.filter(Chat.recipient_id == None).order_by(Chat.timestamp.desc()).all()
+    elif selected_recipient_id:  # Direct messages between users
+        messages = Chat.query.filter(
+            or_(
+                and_(Chat.sender_id == current_user.id, Chat.recipient_id == selected_recipient_id),
+                and_(Chat.sender_id == selected_recipient_id, Chat.recipient_id == current_user.id)
+            )
+        ).order_by(Chat.timestamp.desc()).all()
+    else:  # Default view (show all relevant messages)
+        messages = Chat.query.filter(
+            or_(
+                Chat.recipient_id == None,  # broadcast messages
+                Chat.sender_id == current_user.id,  # messages sent by current user
+                Chat.recipient_id == current_user.id  # messages sent to current user
+            )
+        ).order_by(Chat.timestamp.desc()).all()
 
     messages_list = []
     for message in messages:
-         messages_list.append({
-               'sender': message.sender.name,
-               'content': message.content,
-               'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-          })
+        messages_list.append({
+            'sender': message.sender.name,
+            'sender_id': message.sender_id,
+            'recipient': message.recipient.name if message.recipient else 'Everyone',
+            'recipient_id': message.recipient_id if message.recipient else None,
+            'content': message.content,
+            'timestamp': message.timestamp.strftime('%I:%M %p'),
+            'profile_picture': message.sender.profile_picture if message.sender.profile_picture else None
+        })
 
-    return jsonify(messages_list)
+    return jsonify(messages_list[::-1])  # Reverse to show newest messages at bottom
 
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
@@ -627,82 +690,4 @@ def time_filter(time_str):
 def index():
     pass
 
-# Task Management Routes
-@app.route('/task/<int:task_id>/toggle', methods=['POST'])
-@login_required
-def toggle_task_status(task_id):
-    task = Task.query.get_or_404(task_id)
-    if task.employee_id != current_user.id:
-        return jsonify({'message': 'Unauthorized', 'status': 'error'}), 403
-        
-    task.status = 'completed' if task.status == 'pending' else 'pending'
-    db.session.commit()
-    return jsonify({
-        'status': 'success',
-        'new_status': task.status
-    })
-
-@app.route('/task/new', methods=['POST'])
-@csrf.exempt
-@login_required
-def create_task():
-    try:
-        csrf_token = request.headers.get('X-CSRF-Token')
-        if not csrf_token:
-            return jsonify({'message': 'CSRF token missing', 'status': 'error'}), 403
-            
-        data = request.get_json()
-        if not data.get('title'):
-            return jsonify({'message': 'Title is required', 'status': 'error'}), 400
-            
-        # Parse the datetime string properly
-        due_date = datetime.strptime(data['due_date'], '%Y-%m-%dT%H:%M')
-        
-        task = Task(
-            employee_id=current_user.id,
-            title=data['title'],
-            description=data.get('description'),
-            due_date=due_date,
-            status='pending'
-        )
-        db.session.add(task)
-        db.session.commit()
-        return jsonify({
-            'status': 'success',
-            'message': 'Task created successfully'
-        })
-    except ValueError as e:
-        return jsonify({
-            'status': 'error',
-            'message': 'Invalid date format. Please use YYYY-MM-DDTHH:MM format.'
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'Error creating task: {str(e)}'
-        }), 500
-
-def start_server():
-    app.run(debug=True, host='0.0.0.0', port=5000)  # Be explicit about host and port
-
-if __name__ == '__main__':
-    # --- Database setup ---
-    with app.app_context():
-        db.create_all()
-        # Create admin user if it doesn't exist
-        admin_user = Employee.query.filter_by(employee_id='admin').first()
-        if not admin_user:
-            admin_user = Employee(employee_id='admin', name='Harsh Raj Jaiswal', email='jaiswal.harshraj1601@gmail.com', role='admin')
-            admin_user.set_password('password')  # USE A STRONG PASSWORD!
-            db.session.add(admin_user)
-            db.session.commit()
-        start_server()
-    # --- Start Flask server in a thread ---
-    # t = threading.Thread(target=start_server)
-    # t.daemon = True
-    # t.start()
-    # time.sleep(1)  # Give the server a moment to start
-
-    # --- Create and run WebView window ---
-    # webview.create_window("Company App", "http://127.0.0.1:5000/",maximized=True, resizable=False)
-    # webview.start()
+# Task
