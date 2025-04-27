@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+{% block title %}Personal Chat - Employee Track{% endblock %}
+
+{% block csslinks %}
+<link href="https://fonts.googleapis.com/css?family=Montserrat:400,500|Poppins:400,500,600,700|Roboto:400,500" rel="stylesheet" />
+<link href="https://cdn.materialdesignicons.com/4.4.95/css/materialdesignicons.min.css" rel="stylesheet" />
+<link href="/static/plugins/simplebar/simplebar.css" rel="stylesheet" />
+<link href="/static/plugins/nprogress/nprogress.css" rel="stylesheet" />
+<link id="sleek-css" rel="stylesheet" href="/static/css/sleek.css" />
+<link href="/static/img/favicon.png" rel="shortcut icon" />
+<script src="/static/plugins/nprogress/nprogress.js"></script>
+<style>
+.chat-container {
+    height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+}
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 350px); /* Fixed height for chat box */
+}
+.messages-container {
+    margin-top: auto;
+    overflow-y: auto;
+    padding-right: 5px; /* Add space for scrollbar */
+}
+/* Customize scrollbar appearance */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 15px;
+    max-width: 70%;
+    position: relative;
+}
+.message-received {
+    background-color: #ffffff;
+    margin-right: auto;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.message-sent {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.message-time {
+    font-size: 0.75em;
+    margin-top: 5px;
+    opacity: 0.7;
+}
+.message-sent .message-time {
+    color: rgba(255,255,255,0.8);
+}
+.chat-input {
+    padding: 20px;
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+}
+.chat-input .form-control {
+    border-radius: 20px;
+    padding: 10px 20px;
+}
+.chat-input .btn {
+    border-radius: 20px;
+    padding: 10px 25px;
+}
+.user-list {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+.user-list .media {
+    padding: 12px 15px;
+    border-bottom: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.user-list .media:hover {
+    background-color: #f8f9fa;
+}
+.user-list .media.active {
+    background-color: #e9ecef;
+}
+.status {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    border: 2px solid #fff;
+}
+.status.online {
+    background-color: #28a745;
+}
+.status.offline {
+    background-color: #dc3545;
+}
+.chat-search {
+    padding: 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+.chat-search .form-control {
+    border-radius: 20px;
+    padding: 10px 20px;
+}
+.chat-header {
+    padding: 15px;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #fff;
+}
+.user-profile-pic {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.message-profile-pic {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.typing-indicator {
+    font-size: 0.8em;
+    color: #6c757d;
+    padding: 5px 15px;
+}
+.unread-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #007bff;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 0.7em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content">
+        <div class="card card-default mb-0">
+            <div class="row bg-white no-gutters">
+                <div class="col-lg-4">
+                    <!-- Chat Left Side -->
+                    <div class="chat-left-side">
+                        <div class="chat-search">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-transparent border-0">
+                                        <i class="mdi mdi-magnify"></i>
+                                    </span>
+                                </div>
+                                <input type="text" class="form-control border-0" id="userSearch" placeholder="Search users...">
+                            </div>
+                        </div>
+                        <ul class="list-unstyled border-top mb-0 user-list" data-simplebar>
+                            <!-- "Everyone" option -->
+                            <li>
+                                <a href="#" class="media media-message" data-recipient-id="0" data-recipient-name="Everyone">
+                                    <div class="position-relative mr-3">
+                                        <img class="user-profile-pic" src="/static/multiuser.svg" alt="Everyone">
+                                        <span class="status online"></span>
+                                    </div>
+                                    <div class="media-body d-flex justify-content-between align-items-center">
+                                        <div class="message-contents">
+                                            <h6 class="title mb-0">Everyone</h6>
+                                            <p class="last-msg text-muted mb-0">Send message to all users</p>
+                                        </div>
+                                    </div>
+                                </a>
+                            </li>
+                            {% for user in form.recipient_id.choices if user[0] != 0 %}
+                            <li>
+                                <a href="#" class="media media-message" data-recipient-id="{{ user[0] }}" data-recipient-name="{{ user[1] }}">
+                                    <div class="position-relative mr-3">
+                                        <img class="user-profile-pic" src="{% if user.profile_picture %}/static/profile_pics/{{ user.profile_picture }}{% else %}/static/noimage.svg{% endif %}" alt="{{ user[1] }}">
+                                        <span class="status offline"></span>
+                                    </div>
+                                    <div class="media-body d-flex justify-content-between align-items-center">
+                                        <div class="message-contents">
+                                            <h6 class="title mb-0">{{ user[1] }}</h6>
+                                            <p class="last-msg text-muted mb-0">Click to start chatting</p>
+                                        </div>
+                                    </div>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <!-- Chat Right Side -->
+                    <div class="chat-right-side">
+                        <div class="chat-header">
+                            <div class="media align-items-center">
+                                <div class="position-relative mr-3" id="recipientProfilePic">
+                                    <img class="user-profile-pic" src="/static/img/user/group.png" alt="Everyone">
+                                    <span class="status online"></span>
+                                </div>
+                                <div class="media-body">
+                                    <h5 class="mb-0">Chat with <span id="currentRecipient">Everyone</span></h5>
+                                    <small class="text-muted" id="onlineStatus">Active Now</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-messages p-4" id="chatMessages" data-simplebar>
+                            <div class="messages-container">
+                                {% for message in messages %}
+                                <div class="d-flex {% if message.sender_id == current_user.id %}justify-content-end{% endif %} mb-4">
+                                    {% if message.sender_id != current_user.id %}
+                                    <div class="mr-2">
+                                        <img class="message-profile-pic" src="{% if message.sender.profile_picture %}/static/profile_pics/{{ message.sender.profile_picture }}{% else %}/static/noimage.svg{% endif %}" alt="{{ message.sender.name }}">
+                                    </div>
+                                    {% endif %}
+                                    <div class="message {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
+                                        <div class="message-content">{{ message.content }}</div>
+                                        <div class="message-time">
+                                            <small>{{ message.sender.name }}</small> • 
+                                            {{ message.timestamp.strftime('%H:%M') }}
+                                            {% if message.recipient %}
+                                            <span class="badge badge-light">to {{ message.recipient.name }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if message.sender_id == current_user.id %}
+                                    <div class="ml-2">
+                                        <img class="message-profile-pic" src="{% if current_user.profile_picture %}/static/profile_pics/{{ current_user.profile_picture }}{% else %}/static/noimage.svg{% endif %}" alt="{{ current_user.name }}">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="chat-input">
+                            <form id="chatForm" method="POST">
+                                {{ form.hidden_tag() }}
+                                {{ form.recipient_id(style="display: none;") }}
+                                <div class="input-group">
+                                    {{ form.content(class="form-control", placeholder="Type your message here...", autocomplete="off") }}
+                                    <div class="input-group-append">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="mdi mdi-send"></i> Send
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="typing-indicator d-none">
+                                <i class="mdi mdi-pencil"></i> Someone is typing...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block jslinks %}
+<script src="/static/plugins/jquery/jquery.min.js"></script>
+<script src="/static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/static/plugins/simplebar/simplebar.min.js"></script>
+<script src="/static/js/sleek.js"></script>
+<script>
+$(document).ready(function() {
+    function scrollToBottom() {
+        var chatMessages = document.getElementById('chatMessages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    scrollToBottom();
+
+    // Auto refresh messages
+    function loadMessages() {
+        var selectedRecipientId = $('#recipient_id').val();
+        $.ajax({
+            url: '/get_messages',
+            data: { recipient_id: selectedRecipientId },
+            success: function(messages) {
+                var chatHtml = '<div class="messages-container">';
+                messages.forEach(function(msg) {
+                    var isCurrentUser = msg.sender_id === {{ current_user.id }};
+                    var profilePic = msg.profile_picture ? '/static/profile_pics/' + msg.profile_picture : '/static/noimage.svg';
+                    if (isCurrentUser && '{{ current_user.profile_picture }}') {
+                        profilePic = '/static/profile_pics/{{ current_user.profile_picture }}';
+                    }
+                    
+                    chatHtml += `
+                        <div class="d-flex ${isCurrentUser ? 'justify-content-end' : ''} mb-4">
+                            ${!isCurrentUser ? `
+                                <div class="mr-2">
+                                    <img class="message-profile-pic" src="${profilePic}" alt="${msg.sender}" onerror="this.src='/static/noimage.svg'">
+                                </div>
+                            ` : ''}
+                            <div class="message ${isCurrentUser ? 'message-sent' : 'message-received'}">
+                                <div class="message-content">${msg.content}</div>
+                                <div class="message-time">
+                                    <small>${msg.sender}</small> • ${msg.timestamp}
+                                    ${msg.recipient ? `<span class="badge badge-light">to ${msg.recipient}</span>` : ''}
+                                </div>
+                            </div>
+                            ${isCurrentUser ? `
+                                <div class="ml-2">
+                                    <img class="message-profile-pic" src="${profilePic}" alt="${msg.sender}" onerror="this.src='/static/noimage.svg'">
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                chatHtml += '</div>';
+                $('#chatMessages').html(chatHtml);
+                scrollToBottom();
+            }
+        });
+    }
+    
+    // Refresh messages every 5 seconds
+    setInterval(loadMessages, 5000);
+    
+    // Handle recipient selection with message reload
+    $('.media-message').click(function(e) {
+        e.preventDefault();
+        $('.media-message').removeClass('active');
+        $(this).addClass('active');
+        
+        var recipientId = $(this).data('recipient-id');
+        var recipientName = $(this).data('recipient-name');
+        var recipientImg = $(this).find('.user-profile-pic').attr('src');
+        var isOnline = $(this).find('.status').hasClass('online');
+        
+        // Update chat header
+        $('#currentRecipient').text(recipientName);
+        $('#recipientProfilePic img').attr('src', recipientImg);
+        $('#recipientProfilePic .status').toggleClass('online', isOnline);
+        $('#onlineStatus').text(isOnline ? 'Active Now' : 'Offline');
+        
+        // Update form and reload messages
+        $('#recipient_id').val(recipientId);
+        loadMessages(); // Immediately load messages for the selected recipient
+    });
+
+    // Search functionality with highlighting
+    $('#userSearch').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        $('.user-list li').each(function() {
+            var $this = $(this);
+            var text = $this.text().toLowerCase();
+            var match = text.indexOf(value) > -1;
+            $this.toggle(match);
+            
+            // Highlight matching text
+            if (match && value.length > 0) {
+                var regex = new RegExp(value, 'gi');
+                var highlightedText = $this.find('.title').text().replace(regex, function(str) {
+                    return '<span class="highlight">' + str + '</span>';
+                });
+                $this.find('.title').html(highlightedText);
+            } else {
+                $this.find('.title').html($this.find('.title').text());
+            }
+        });
+    });
+
+    // Handle form submission with typing indicator
+    var typingTimer;
+    $('#chatForm textarea').on('input', function() {
+        clearTimeout(typingTimer);
+        $('.typing-indicator').removeClass('d-none');
+        
+        typingTimer = setTimeout(function() {
+            $('.typing-indicator').addClass('d-none');
+        }, 1000);
+    });
+
+    $('#chatForm').on('submit', function(e) {
+        e.preventDefault();
+        var $form = $(this);
+        var $submitBtn = $form.find('button[type="submit"]');
+        
+        // Disable submit button and show loading state
+        $submitBtn.prop('disabled', true).html('<i class="mdi mdi-loading mdi-spin"></i> Sending...');
+        
+        $.ajax({
+            url: '/chat',
+            type: 'POST',
+            data: $form.serialize(),
+            success: function(response) {
+                $('#content').val('');
+                loadMessages();
+                scrollToBottom();
+            },
+            error: function() {
+                alert('Error sending message');
+            },
+            complete: function() {
+                // Re-enable submit button and restore original text
+                $submitBtn.prop('disabled', false).html('<i class="mdi mdi-send"></i> Send');
+            }
+        });
+    });
+
+    // Enable enter to send (shift+enter for new line)
+    $('#content').keydown(function(e) {
+        if (e.keyCode === 13 && !e.shiftKey) {
+            e.preventDefault();
+            $('#chatForm').submit();
+        }
+    });
+});
+</script>
+{% endblock %}

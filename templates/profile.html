@@ -1,0 +1,810 @@
+{% extends "base.html" %} {% block title %}User Profile - Digipodium {%endblock %} 
+{% block content %}
+<div class="content-wrapper">
+  <div class="content">
+    <div class="bg-white border rounded">
+      <div class="row no-gutters">
+        <div class="col-lg-5 col-xl-4">
+          <div
+            class="profile-content-left profile-left-spacing pt-5 pb-3 px-3 px-xl-5"
+          >
+            <div class="card text-center widget-profile px-0 border-0">
+              <div class="card-img mx-auto rounded-circle">
+                <img
+                  src="{% if employee.profile_picture %}/static/profile_pics/{{ employee.profile_picture }}{% else %}/static/noimage.svg{% endif %}"
+                  alt="user image"
+                  width="100"
+                  height="100"
+                />
+              </div>
+
+              <div class="card-body">
+                <h4 class="py-2 text-dark">{{ employee.name }}</h4>
+                <p>{{ employee.role }}</p>
+              </div>
+            </div>
+
+            <hr class="w-100" />
+
+            <div class="contact-info pt-4">
+              <h5 class="text-dark mb-1">Contact Information</h5>
+              <p class="text-dark font-weight-medium pt-4 mb-2">
+                Email address
+              </p>
+              <p>{{ employee.email }}</p>
+              <p class="text-dark font-weight-medium pt-4 mb-2">Phone Number</p>
+              <p>
+                {% if employee.mobile_number %} {{ employee.mobile_number }} {%
+                else %} Not Provided {% endif %}
+              </p>
+              <p class="text-dark font-weight-medium pt-4 mb-2">Birthday</p>
+              <p>Feb 29, 2004</p>
+              <p class="text-dark font-weight-medium pt-4 mb-2">
+                Social Profile
+              </p>
+              <p class="pb-3 social-button">
+                <a
+                  href="#"
+                  class="mb-1 btn btn-outline btn-twitter rounded-circle"
+                >
+                  <i class="mdi mdi-twitter"></i>
+                </a>
+
+                <a
+                  href="#"
+                  class="mb-1 btn btn-outline btn-linkedin rounded-circle"
+                >
+                  <i class="mdi mdi-linkedin"></i>
+                </a>
+
+                <a
+                  href="#"
+                  class="mb-1 btn btn-outline btn-facebook rounded-circle"
+                >
+                  <i class="mdi mdi-facebook"></i>
+                </a>
+
+                <a
+                  href="#"
+                  class="mb-1 btn btn-outline btn-skype rounded-circle"
+                >
+                  <i class="mdi mdi-skype"></i>
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+        {% if form %}
+        <div class="col-lg-7 col-xl-8">
+          <div class="profile-content-right profile-right-spacing py-5">
+            <ul
+              class="nav nav-tabs px-3 px-xl-5 nav-style-border"
+              id="myTab"
+              role="tablist"
+            >
+              <!-- <li class="nav-item">
+                <a
+                  class="nav-link"
+                  id="timeline-tab"
+                  data-toggle="tab"
+                  href="#timeline"
+                  role="tab"
+                  aria-controls="timeline"
+                  aria-selected="true"
+                  >Timeline</a
+                >
+              </li> -->
+
+              <li class="nav-item">
+                <a
+                  class="nav-link"
+                  id="profile-tab"
+                  data-toggle="tab"
+                  href="#profile"
+                  role="tab"
+                  aria-controls="profile"
+                  aria-selected="false"
+                  >Profile</a
+                >
+              </li>
+
+              <li class="nav-item">
+                <a
+                  class="nav-link active"
+                  id="settings-tab"
+                  data-toggle="tab"
+                  href="#settings"
+                  role="tab"
+                  aria-controls="settings"
+                  aria-selected="false"
+                  >Settings</a
+                >
+              </li>
+            </ul>
+
+            <div class="tab-content px-3 px-xl-5" id="myTabContent">
+              <div
+                class="tab-pane fade"
+                id="timeline"
+                role="tabpanel"
+                aria-labelledby="timeline-tab"
+              ></div>
+
+              <div
+                class="tab-pane fade"
+                id="profile"
+                role="tabpanel"
+                aria-labelledby="profile-tab"
+              >
+                <div class="tab-widget mt-5">
+                  <div class="row">
+                    <div class="col-xl-6">
+                      <!-- Notification Table -->
+                      <div class="card card-default">
+                        <div class="card-header justify-content-between mb-1">
+                          <h2>Latest Notifications</h2>
+                          <div>
+                            <button class="text-black-50 mr-2 font-size-20">
+                              <i class="mdi mdi-cached"></i>
+                            </button>
+                            <div
+                              class="dropdown show d-inline-block widget-dropdown"
+                            >
+                              <a
+                                class="dropdown-toggle icon-burger-mini"
+                                href="#"
+                                role="button"
+                                id="dropdown-notification"
+                                data-toggle="dropdown"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                data-display="static"
+                              ></a>
+                              <ul
+                                class="dropdown-menu dropdown-menu-right"
+                                aria-labelledby="dropdown-notification"
+                              >
+                                <li class="dropdown-item">
+                                  <a href="#">Action</a>
+                                </li>
+                                <li class="dropdown-item">
+                                  <a href="#">Another action</a>
+                                </li>
+                                <li class="dropdown-item">
+                                  <a href="#">Something else here</a>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          class="card-body compact-notifications"
+                          data-simplebar
+                          style="height: 434px"
+                        >
+                          <div
+                            class="media pb-3 align-items-center justify-content-between"
+                          >
+                            <div
+                              class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-primary text-white"
+                            >
+                              <i class="mdi mdi-cart-outline font-size-20"></i>
+                            </div>
+                            <div class="media-body pr-3">
+                              <a
+                                class="mt-0 mb-1 font-size-15 text-dark"
+                                href="#"
+                                >New Order</a
+                              >
+                              <p>Selena has placed an new order</p>
+                            </div>
+                            <span class="font-size-12 d-inline-block"
+                              ><i class="mdi mdi-clock-outline"></i> 10 AM</span
+                            >
+                          </div>
+
+                          <div
+                            class="media py-3 align-items-center justify-content-between"
+                          >
+                            <div
+                              class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-success text-white"
+                            >
+                              <i class="mdi mdi-email-outline font-size-20"></i>
+                            </div>
+                            <div class="media-body pr-3">
+                              <a
+                                class="mt-0 mb-1 font-size-15 text-dark"
+                                href="#"
+                                >New Enquiry</a
+                              >
+                              <p>Phileine has placed an new order</p>
+                            </div>
+                            <span class="font-size-12 d-inline-block"
+                              ><i class="mdi mdi-clock-outline"></i> 9 AM</span
+                            >
+                          </div>
+
+                          <div
+                            class="media py-3 align-items-center justify-content-between"
+                          >
+                            <div
+                              class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-warning text-white"
+                            >
+                              <i
+                                class="mdi mdi-stack-exchange font-size-20"
+                              ></i>
+                            </div>
+                            <div class="media-body pr-3">
+                              <a
+                                class="mt-0 mb-1 font-size-15 text-dark"
+                                href="#"
+                                >Support Ticket</a
+                              >
+                              <p>Emma has placed an new order</p>
+                            </div>
+                            <span class="font-size-12 d-inline-block"
+                              ><i class="mdi mdi-clock-outline"></i> 10 AM</span
+                            >
+                          </div>
+
+                          <div
+                            class="media py-3 align-items-center justify-content-between"
+                          >
+                            <div
+                              class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-primary text-white"
+                            >
+                              <i class="mdi mdi-cart-outline font-size-20"></i>
+                            </div>
+                            <div class="media-body pr-3">
+                              <a
+                                class="mt-0 mb-1 font-size-15 text-dark"
+                                href="#"
+                                >New order</a
+                              >
+                              <p>Ryan has placed an new order</p>
+                            </div>
+                            <span class="font-size-12 d-inline-block"
+                              ><i class="mdi mdi-clock-outline"></i> 10 AM</span
+                            >
+                          </div>
+
+                          <div
+                            class="media py-3 align-items-center justify-content-between"
+                          >
+                            <div
+                              class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-info text-white"
+                            >
+                              <i
+                                class="mdi mdi-calendar-blank font-size-20"
+                              ></i>
+                            </div>
+                            <div class="media-body pr-3">
+                              <a
+                                class="mt-0 mb-1 font-size-15 text-dark"
+                                href=""
+                                >Comapny Meetup</a
+                              >
+                              <p>Phileine has placed an new order</p>
+                            </div>
+                            <span class="font-size-12 d-inline-block"
+                              ><i class="mdi mdi-clock-outline"></i> 10 AM</span
+                            >
+                          </div>
+
+                          <div
+                            class="media py-3 align-items-center justify-content-between"
+                          >
+                            <div
+                              class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-warning text-white"
+                            >
+                              <i
+                                class="mdi mdi-stack-exchange font-size-20"
+                              ></i>
+                            </div>
+                            <div class="media-body pr-3">
+                              <a
+                                class="mt-0 mb-1 font-size-15 text-dark"
+                                href="#"
+                                >Support Ticket</a
+                              >
+                              <p>Emma has placed an new order</p>
+                            </div>
+                            <span class="font-size-12 d-inline-block"
+                              ><i class="mdi mdi-clock-outline"></i> 10 AM</span
+                            >
+                          </div>
+
+                          <div
+                            class="media py-3 align-items-center justify-content-between"
+                          >
+                            <div
+                              class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-success text-white"
+                            >
+                              <i class="mdi mdi-email-outline font-size-20"></i>
+                            </div>
+                            <div class="media-body pr-3">
+                              <a
+                                class="mt-0 mb-1 font-size-15 text-dark"
+                                href="#"
+                                >New Enquiry</a
+                              >
+                              <p>Phileine has placed an new order</p>
+                            </div>
+                            <span class="font-size-12 d-inline-block"
+                              ><i class="mdi mdi-clock-outline"></i> 9 AM</span
+                            >
+                          </div>
+                        </div>
+                        <div class="mt-3"></div>
+                      </div>
+                    </div>
+
+                    <div class="col-xl-6">
+                      <!-- To Do list -->
+                      <div class="card card-default todo-table" id="todo">
+                        <div class="card-header d-block pb-0">
+                          <div class="todo-single-item mb-0" id="todo-input">
+                            <form class="todo-form">
+                              <div class="input-group mb-0">
+                                <input
+                                  type="text"
+                                  class="form-control border-right-0"
+                                  placeholder="Add Todo"
+                                  required=""
+                                  autofocus
+                                />
+                                <div class="input-group-append ml-0">
+                                  <button
+                                    class="input-group-text border-0 btn bg-primary"
+                                    type="submit"
+                                  >
+                                    <?xml version="1.0"?>
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      height="18"
+                                      viewBox="0 0 448 448"
+                                      width="18"
+                                      class=""
+                                    >
+                                      <g>
+                                        <path
+                                          d="m408 184h-136c-4.417969 0-8-3.582031-8-8v-136c0-22.089844-17.910156-40-40-40s-40 17.910156-40 40v136c0 4.417969-3.582031 8-8 8h-136c-22.089844 0-40 17.910156-40 40s17.910156 40 40 40h136c4.417969 0 8 3.582031 8 8v136c0 22.089844 17.910156 40 40 40s40-17.910156 40-40v-136c0-4.417969 3.582031-8 8-8h136c22.089844 0 40-17.910156 40-40s-17.910156-40-40-40zm0 0"
+                                          data-original="#000000"
+                                          class="active-path"
+                                          data-old_color="#000000"
+                                          fill="#FFFFFF"
+                                        />
+                                      </g>
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+
+                        <div
+                          class="card-body compact-to-do-list"
+                          data-simplebar
+                          style="height: 450px"
+                        >
+                          <div class="todo-list" id="todo-list">
+                            <div
+                              id="item"
+                              class="todo-single-item todo-item d-flex flex-row justify-content-between finished alert alert-dismissible fade show"
+                              role="alert"
+                            >
+                              <i class="mdi"></i>
+                              <span>Finish Dashboard UI Kit update</span>
+
+                              <div class="task-content">
+                                <span data-dismiss="alert" aria-label="Close">
+                                  <svg
+                                    class="remove-task"
+                                    id="Capa_1"
+                                    enable-background="new 0 0 515.556 515.556"
+                                    height="16"
+                                    viewBox="0 0 515.556 515.556"
+                                    width="16"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      class=""
+                                      d="m64.444 451.111c0 35.526 28.902 64.444 64.444 64.444h257.778c35.542 0 64.444-28.918 64.444-64.444v-322.222h-386.666z"
+                                    />
+                                    <path
+                                      d="m322.222 32.222v-32.222h-128.889v32.222h-161.111v64.444h451.111v-64.444z"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div
+                              class="todo-single-item d-flex flex-row justify-content-between current alert alert-dismissible fade show"
+                              role="alert"
+                            >
+                              <i class="mdi"></i>
+                              <span
+                                >Create new prototype for the landing page</span
+                              >
+
+                              <div class="task-content">
+                                <span data-dismiss="alert" aria-label="Close">
+                                  <svg
+                                    class="remove-task"
+                                    id="Capa_1"
+                                    enable-background="new 0 0 515.556 515.556"
+                                    height="16"
+                                    viewBox="0 0 515.556 515.556"
+                                    width="16"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      class=""
+                                      d="m64.444 451.111c0 35.526 28.902 64.444 64.444 64.444h257.778c35.542 0 64.444-28.918 64.444-64.444v-322.222h-386.666z"
+                                    />
+                                    <path
+                                      d="m322.222 32.222v-32.222h-128.889v32.222h-161.111v64.444h451.111v-64.444z"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div
+                              class="todo-single-item d-flex flex-row justify-content-between alert alert-dismissible fade show"
+                              role="alert"
+                            >
+                              <i class="mdi"></i>
+                              <span
+                                >Add new Google Analytics code to all main files
+                                sed auctor lacus in sem interdum, ac gravida
+                                tortor elementum. Cras magna enim.</span
+                              >
+
+                              <div class="task-content">
+                                <span data-dismiss="alert" aria-label="Close">
+                                  <svg
+                                    class="remove-task"
+                                    id="Capa_1"
+                                    enable-background="new 0 0 515.556 515.556"
+                                    height="16"
+                                    viewBox="0 0 515.556 515.556"
+                                    width="16"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      class=""
+                                      d="m64.444 451.111c0 35.526 28.902 64.444 64.444 64.444h257.778c35.542 0 64.444-28.918 64.444-64.444v-322.222h-386.666z"
+                                    />
+                                    <path
+                                      d="m322.222 32.222v-32.222h-128.889v32.222h-161.111v64.444h451.111v-64.444z"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div
+                              class="todo-single-item d-flex flex-row justify-content-between alert alert-dismissible fade show"
+                              role="alert"
+                            >
+                              <i class="mdi"></i>
+                              <span>Update parallax scroll on team page</span>
+
+                              <div class="task-content">
+                                <span data-dismiss="alert" aria-label="Close">
+                                  <svg
+                                    class="remove-task"
+                                    id="Capa_1"
+                                    enable-background="new 0 0 515.556 515.556"
+                                    height="16"
+                                    viewBox="0 0 515.556 515.556"
+                                    width="16"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      class=""
+                                      d="m64.444 451.111c0 35.526 28.902 64.444 64.444 64.444h257.778c35.542 0 64.444-28.918 64.444-64.444v-322.222h-386.666z"
+                                    />
+                                    <path
+                                      d="m322.222 32.222v-32.222h-128.889v32.222h-161.111v64.444h451.111v-64.444z"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div
+                              class="todo-single-item d-flex flex-row justify-content-between alert alert-dismissible fade show"
+                              role="alert"
+                            >
+                              <i class="mdi"></i>
+                              <span
+                                >Integer et porta odio, pulvinar pretium eros.
+                                Curabitur vel tellus erat.</span
+                              >
+
+                              <div class="task-content">
+                                <span data-dismiss="alert" aria-label="Close">
+                                  <svg
+                                    class="remove-task"
+                                    id="Capa_1"
+                                    enable-background="new 0 0 515.556 515.556"
+                                    height="16"
+                                    viewBox="0 0 515.556 515.556"
+                                    width="16"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      class=""
+                                      d="m64.444 451.111c0 35.526 28.902 64.444 64.444 64.444h257.778c35.542 0 64.444-28.918 64.444-64.444v-322.222h-386.666z"
+                                    />
+                                    <path
+                                      d="m322.222 32.222v-32.222h-128.889v32.222h-161.111v64.444h451.111v-64.444z"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div
+                              class="todo-single-item d-flex flex-row justify-content-between alert alert-dismissible fade show"
+                              role="alert"
+                            >
+                              <i class="mdi"></i>
+                              <span
+                                >Pellentesque blandit ut eros sed
+                                vehicula.</span
+                              >
+
+                              <div class="task-content">
+                                <span data-dismiss="alert" aria-label="Close">
+                                  <svg
+                                    class="remove-task"
+                                    id="Capa_1"
+                                    enable-background="new 0 0 515.556 515.556"
+                                    height="16"
+                                    viewBox="0 0 515.556 515.556"
+                                    width="16"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      class=""
+                                      d="m64.444 451.111c0 35.526 28.902 64.444 64.444 64.444h257.778c35.542 0 64.444-28.918 64.444-64.444v-322.222h-386.666z"
+                                    />
+                                    <path
+                                      d="m322.222 32.222v-32.222h-128.889v32.222h-161.111v64.444h451.111v-64.444z"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div
+                              class="todo-single-item d-flex flex-row justify-content-between alert alert-dismissible fade show"
+                              role="alert"
+                            >
+                              <i class="mdi"></i>
+                              <span
+                                >Lorem ipsum dolor sit amet, consectetur
+                                adipiscing elit. Donec felis ligula, fringilla
+                                in volutpat sit amet, viverra nec mi. Donec at
+                                dui dolor.</span
+                              >
+
+                              <div class="task-content">
+                                <span data-dismiss="alert" aria-label="Close">
+                                  <svg
+                                    class="remove-task"
+                                    id="Capa_1"
+                                    enable-background="new 0 0 515.556 515.556"
+                                    height="16"
+                                    viewBox="0 0 515.556 515.556"
+                                    width="16"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      class=""
+                                      d="m64.444 451.111c0 35.526 28.902 64.444 64.444 64.444h257.778c35.542 0 64.444-28.918 64.444-64.444v-322.222h-386.666z"
+                                    />
+                                    <path
+                                      d="m322.222 32.222v-32.222h-128.889v32.222h-161.111v64.444h451.111v-64.444z"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div
+                              class="todo-single-item d-flex flex-row justify-content-between mb-1 alert alert-dismissible fade show"
+                              role="alert"
+                            >
+                              <i class="mdi"></i>
+                              <span>Update parallax scroll on team page</span>
+
+                              <div class="task-content">
+                                <span data-dismiss="alert" aria-label="Close">
+                                  <svg
+                                    class="remove-task"
+                                    id="Capa_1"
+                                    enable-background="new 0 0 515.556 515.556"
+                                    height="16"
+                                    viewBox="0 0 515.556 515.556"
+                                    width="16"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      class=""
+                                      d="m64.444 451.111c0 35.526 28.902 64.444 64.444 64.444h257.778c35.542 0 64.444-28.918 64.444-64.444v-322.222h-386.666z"
+                                    />
+                                    <path
+                                      d="m322.222 32.222v-32.222h-128.889v32.222h-161.111v64.444h451.111v-64.444z"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="mt-3"></div>
+                      </div>
+                    </div>
+
+                    <div class="col-12">
+                      <!-- Recent Order Table -->
+                      <div
+                        class="card card-table-border-none"
+                        id="recent-orders"
+                      >
+                        <div class="card-header justify-content-between">
+                          <h2>Recent Orders</h2>
+
+                          <div class="date-range-report">
+                            <span></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="tab-pane fade show active"
+                id="settings"
+                role="tabpanel"
+                aria-labelledby="settings-tab"
+              >
+                <div class="tab-pane-content mt-5">
+                  <form method="POST" enctype="multipart/form-data">
+                    <!-- Important: enctype attribute for file uploads -->
+                    {{ form.hidden_tag() }}
+
+                    <!-- Profile Picture Upload -->
+                    <div class="form-group row mb-6">
+                      <label
+                        for="profile_picture"
+                        class="col-sm-4 col-lg-2 col-form-label"
+                        >User Image</label
+                      >
+                      <div class="col-sm-8 col-lg-10">
+                        <div class="custom-file mb-1">
+                          {{ form.profile_picture(class="custom-file-input",
+                          id="profile_picture") }}
+                          <label class="custom-file-label" for="profile_picture"
+                            >Choose file...</label
+                          >
+                          {% for error in form.profile_picture.errors %}
+                          <span class="text-danger">{{ error }}</span>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Name -->
+                    <div class="form-group mb-4">
+                      <label for="name">Full Name</label>
+                      {{ form.name(class="form-control", id="name",
+                      placeholder="Enter Name") }} {% for error in
+                      form.name.errors %}
+                      <span class="text-danger">{{ error }}</span>
+                      {% endfor %}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-group mb-4">
+                      <label for="email">Email</label>
+                      {{ form.email(class="form-control", id="email",
+                      placeholder="Enter Email") }} {% for error in
+                      form.email.errors %}
+                      <span class="text-danger">{{ error }}</span>
+                      {% endfor %}
+                    </div>
+
+                    <!-- Mobile Number -->
+                    <div class="form-group mb-4">
+                      <label for="mobile_number">Mobile Number</label>
+                      {{ form.mobile_number(class="form-control",
+                      id="mobile_number", placeholder="Enter Mobile Number") }}
+                      {% for error in form.mobile_number.errors %}
+                      <span class="text-danger">{{ error }}</span>
+                      {% endfor %}
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-flex justify-content-end mt-5">
+                      {{ form.submit(class="btn btn-primary mb-2 btn-pill") }}
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+  {% endblock %} {% block csslinks %}
+
+  <link
+    href="https://fonts.googleapis.com/css?family=Montserrat:400,500|Poppins:400,500,600,700|Roboto:400,500"
+    rel="stylesheet"
+  />
+
+  <link
+    href="https://cdn.materialdesignicons.com/4.4.95/css/materialdesignicons.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- PLUGINS CSS STYLE -->
+  <link href="/static/plugins/simplebar/simplebar.css" rel="stylesheet" />
+  <link href="/static/plugins/nprogress/nprogress.css" rel="stylesheet" />
+
+  <!-- No Extra plugin used -->
+
+  <link
+    href="/static/plugins/daterangepicker/daterangepicker.css"
+    rel="stylesheet"
+  />
+
+  <!-- SLEEK CSS -->
+  <link id="sleek-css" rel="stylesheet" href="/static/css/sleek.css" />
+
+  <!-- FAVICON -->
+  <link href="/static/img/favicon.png" rel="shortcut icon" />
+  <script src="/static/plugins/nprogress/nprogress.js"></script>
+  {% endblock %} {% block css %} {% endblock %} {% block jslinks %}
+  <script src="/static/plugins/jquery/jquery.min.js"></script>
+  <script src="/static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/plugins/simplebar/simplebar.min.js"></script>
+
+  <script src="/static/plugins/daterangepicker/moment.min.js"></script>
+  <script src="/static/plugins/daterangepicker/daterangepicker.js"></script>
+  <script src="/static/js/date-range.js"></script>
+
+  <script src="/static/js/sleek.js"></script>
+  <link href="/static/options/optionswitch.css" rel="stylesheet" />
+  <script src="/static/options/optionswitcher.js"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.min.css"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.min.js"></script>
+  {% endblock %} {% block js %}
+  <script>
+    function updateFileName() {
+      var input = document.getElementById("profile_picture");
+      var label = document.getElementById("fileLabel");
+      if (input.files.length > 0) {
+        label.innerText = input.files[0].name; // Display selected file name
+      } else {
+        label.innerText = "Choose file..."; // Reset if no file selected
+      }
+    }
+  </script>
+  {% endblock %}
