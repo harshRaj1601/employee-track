@@ -691,3 +691,82 @@ def index():
     pass
 
 # Task
+# Task Management Routes
+@app.route('/task/<int:task_id>/toggle', methods=['POST'])
+@login_required
+def toggle_task_status(task_id):
+    task = Task.query.get_or_404(task_id)
+    if task.employee_id != current_user.id:
+        return jsonify({'message': 'Unauthorized', 'status': 'error'}), 403
+        
+    task.status = 'completed' if task.status == 'pending' else 'pending'
+    db.session.commit()
+    return jsonify({
+        'status': 'success',
+        'new_status': task.status
+    })
+
+@app.route('/task/new', methods=['POST'])
+@csrf.exempt
+@login_required
+def create_task():
+    try:
+        csrf_token = request.headers.get('X-CSRF-Token')
+        if not csrf_token:
+            return jsonify({'message': 'CSRF token missing', 'status': 'error'}), 403
+            
+        data = request.get_json()
+        if not data.get('title'):
+            return jsonify({'message': 'Title is required', 'status': 'error'}), 400
+            
+        # Parse the datetime string properly
+        due_date = datetime.strptime(data['due_date'], '%Y-%m-%dT%H:%M')
+        
+        task = Task(
+            employee_id=current_user.id,
+            title=data['title'],
+            description=data.get('description'),
+            due_date=due_date,
+            status='pending'
+        )
+        db.session.add(task)
+        db.session.commit()
+        return jsonify({
+            'status': 'success',
+            'message': 'Task created successfully'
+        })
+    except ValueError as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid date format. Please use YYYY-MM-DDTHH:MM format.'
+        }), 400
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error creating task: {str(e)}'
+        }), 500
+
+def start_server():
+    app.run(debug=True, host='0.0.0.0', port=5000)  # Be explicit about host and port
+
+if __name__ == '__main__':
+    # --- Database setup ---
+    with app.app_context():
+        db.create_all()
+        # Create admin user if it doesn't exist
+        admin_user = Employee.query.filter_by(employee_id='admin').first()
+        if not admin_user:
+            admin_user = Employee(employee_id='admin', name='Harsh Raj Jaiswal', email='jaiswal.harshraj1601@gmail.com', role='admin')
+            admin_user.set_password('password')  # USE A STRONG PASSWORD!
+            db.session.add(admin_user)
+            db.session.commit()
+        start_server()
+    # --- Start Flask server in a thread ---
+    # t = threading.Thread(target=start_server)
+    # t.daemon = True
+    # t.start()
+    # time.sleep(1)  # Give the server a moment to start
+
+    # --- Create and run WebView window ---
+    # webview.create_window("Company App", "http://127.0.0.1:5000/",maximized=True, resizable=False)
+    # webview.start()
